@@ -1,0 +1,6 @@
+{
+  "name": "The New York Times - International Edition",
+  "description": "The New York Times International Edition: Breaking news, multimedia, reviews & opinion on Washington, business, sports, movies, travel, books, jobs, education, real estate, cars & more.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
