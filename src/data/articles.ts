@@ -13,6 +13,10 @@ export interface Article {
   tag?: string;
   badge?: string;
   commentsCount?: number;
+  authorAvatar?: string;
+  authorRole?: string;
+  audioDuration?: string;
+  isBreaking?: boolean;
   comments?: Array<{
     id: string;
     author: string;
@@ -32,6 +36,7 @@ export const ARTICLES_DATA: Article[] = [
     tag: 'White House Bureau',
     byline: 'Katie Rogers and Jonathan Swan',
     readTime: '4 min read',
+    audioDuration: '4:15',
     publishedAt: 'October 14, 2026',
     imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA87yIoWFSfTFNmeogUxelNEu_1AtPpv5aSDjdMsfktGQ3gNguMF6GG6HvRI0FNHo5cCnAe-0IMA5nCZpVEEwaBI_bnhC4XzoAjtPkQHnlIDyz0HJXG-7dJ4Y-qRqhUlMvrwNAP-G94SF9EDDr_Hr4OP5S1IIUN0auQo4HZQdX09dUIuTY6EKsVjfYImWtNrfWMkayo1FvroHT-Yv9gyBqT31F1llDWLERDNuVYmZUYgwNyv7vttGiv',
     imageCaption: 'The newly appointed press secretary took the podium on Wednesday to address inquiries regarding her background.',
@@ -72,6 +77,7 @@ export const ARTICLES_DATA: Article[] = [
     section: 'U.S. Politics',
     byline: 'Tierney L. Cross',
     readTime: '5 min read',
+    audioDuration: '5:20',
     publishedAt: 'October 14, 2026',
     commentsCount: 312,
     body: [
@@ -89,6 +95,7 @@ export const ARTICLES_DATA: Article[] = [
     section: 'U.S. Politics',
     byline: 'Maggie Haberman and Jonathan Swan',
     readTime: '4 min read',
+    audioDuration: '4:45',
     publishedAt: 'October 14, 2026',
     commentsCount: 519,
     body: [
@@ -122,6 +129,7 @@ export const ARTICLES_DATA: Article[] = [
     tag: 'The Great Read',
     byline: 'Sophie Park for The New York Times',
     readTime: '8 min read',
+    audioDuration: '8:10',
     publishedAt: 'October 14, 2026',
     commentsCount: 167,
     body: [
@@ -140,6 +148,7 @@ export const ARTICLES_DATA: Article[] = [
     badge: 'Update',
     byline: 'Andrew E. Kramer and Eric Schmitt',
     readTime: '6 min read',
+    audioDuration: '6:30',
     publishedAt: 'October 14, 2026',
     commentsCount: 1100,
     body: [
@@ -200,6 +209,8 @@ export const ARTICLES_DATA: Article[] = [
     excerpt: 'Midterm strategies cannot afford passive resistance when structural changes are happening in plain daylight.',
     section: 'Opinion',
     byline: 'David Wallace-Wells',
+    authorRole: 'Opinion Columnist',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=140&h=140&q=80',
     readTime: '4 min read',
     publishedAt: 'October 14, 2026',
     commentsCount: 388,
@@ -216,6 +227,8 @@ export const ARTICLES_DATA: Article[] = [
     section: 'Opinion',
     tag: 'Guest Essay',
     byline: 'Heather Kerr',
+    authorRole: 'Guest Essayist',
+    authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=140&h=140&q=80',
     readTime: '6 min read',
     publishedAt: 'October 14, 2026',
     commentsCount: 204,
@@ -231,6 +244,8 @@ export const ARTICLES_DATA: Article[] = [
     excerpt: 'Modern political tracts have become predictable performance rituals detached from actual governance.',
     section: 'Opinion',
     byline: 'Carlos Lozada',
+    authorRole: 'Opinion Columnist',
+    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=140&h=140&q=80',
     readTime: '5 min read',
     publishedAt: 'October 14, 2026',
     commentsCount: 69,
@@ -246,6 +261,8 @@ export const ARTICLES_DATA: Article[] = [
     excerpt: 'Looking back at the ambitious misfire that showed an actor daring to dismantle his own myth.',
     section: 'Opinion',
     byline: 'Jayson Greene',
+    authorRole: 'Contributing Critic',
+    authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=140&h=140&q=80',
     readTime: '5 min read',
     publishedAt: 'October 14, 2026',
     commentsCount: 152,
@@ -379,4 +396,35 @@ export const EDITIONS = [
   { id: 'ca', label: 'Canada' },
   { id: 'es', label: 'Español' },
   { id: 'zh', label: '中文' }
+];
+
+export const MARKET_INDICES = [
+  { symbol: 'S&P 500', value: '5,842.10', change: '+0.38%', isPositive: true },
+  { symbol: 'NASDAQ', value: '18,367.08', change: '+0.28%', isPositive: true },
+  { symbol: 'Dow Jones', value: '43,077.70', change: '+0.47%', isPositive: true },
+  { symbol: 'Crude Oil', value: '$70.58', change: '-0.19%', isPositive: false },
+  { symbol: 'Gold', value: '$2,674.20', change: '+0.54%', isPositive: true }
+];
+
+export const MEGA_MENU_CATEGORIES = [
+  {
+    category: 'News',
+    links: ['World News', 'U.S. Politics', 'New York', 'Business & Tech', 'Science', 'Climate & Environment', 'Health & Medicine', 'The Upshot']
+  },
+  {
+    category: 'Opinion',
+    links: ['Today’s Opinion', 'Columnists', 'Guest Essays', 'Editorials', 'Letters', 'Sunday Opinion', 'Opinion Audio']
+  },
+  {
+    category: 'Arts',
+    links: ['Books & Reviews', 'Movies & Cinema', 'Television', 'Music & Popcast', 'Theater', 'Visual Arts & Museums', 'Dance']
+  },
+  {
+    category: 'Living',
+    links: ['Style & Fashion', 'Food & Dining', 'Travel & Guides', 'Real Estate', 'Well & Longevity', 'Love & Relationships']
+  },
+  {
+    category: 'More',
+    links: ['Play NYT Games', 'NYT Cooking', 'Wirecutter Product Reviews', 'The Athletic Sports', 'Podcasts & The Daily', 'Today’s Paper Edition']
+  }
 ];

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ArticleModal } from './components/ArticleModal';
@@ -13,7 +13,9 @@ import { SavedArticlesDrawer } from './components/SavedArticlesDrawer';
 import { SubscribeModal } from './components/SubscribeModal';
 import { AuthModal } from './components/AuthModal';
 import { AudioBar } from './components/AudioBar';
+import { MegaMenu } from './components/MegaMenu';
 import { ARTICLES_DATA, PHOTOGRAPHERS, Article } from './data/articles';
+import { Play, Bookmark, Star, ArrowUpRight, Volume2 } from 'lucide-react';
 
 export default function App() {
   const [currentEdition, setCurrentEdition] = useState<string>('intl');
@@ -24,13 +26,28 @@ export default function App() {
   const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
   const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [audioArticle, setAudioArticle] = useState<Article | null>(null);
 
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(['trump-press-secretary']);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const toggleBookmark = (id: string) => {
+  // Keyboard shortcut ⌘K or Ctrl+K for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const toggleBookmark = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setBookmarkedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
@@ -56,7 +73,13 @@ export default function App() {
   });
 
   return (
-    <div className="bg-[#ffffff] text-[#121212] font-nyt-sans antialiased min-h-screen flex flex-col selection:bg-neutral-200">
+    <div
+      className={`font-nyt-sans antialiased min-h-screen flex flex-col transition-colors duration-200 ${
+        isDarkMode
+          ? 'bg-[#121212] text-[#f0f0f0] selection:bg-neutral-800'
+          : 'bg-[#ffffff] text-[#121212] selection:bg-neutral-200'
+      }`}
+    >
       {/* Top Header */}
       <Header
         currentEdition={currentEdition}
@@ -68,6 +91,9 @@ export default function App() {
         onOpenSubscribe={() => setIsSubscribeOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenGames={() => setActiveGame('wordle')}
+        onOpenMegaMenu={() => setIsMegaMenuOpen(true)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         bookmarksCount={bookmarkedIds.length}
         userEmail={userEmail}
         isSubscribed={isSubscribed}
@@ -78,7 +104,7 @@ export default function App() {
         /* Section-filtered view */
         <main className="w-full max-w-[1280px] mx-auto px-5 pt-6 pb-12 flex-1">
           <div className="border-b-2 border-black pb-2 mb-6 flex items-center justify-between">
-            <h2 className="font-nyt-serif text-3xl font-bold uppercase tracking-tight text-[#121212]">
+            <h2 className="font-nyt-serif text-3xl font-bold uppercase tracking-tight">
               {currentSection.toUpperCase()}
             </h2>
             <button
@@ -94,7 +120,7 @@ export default function App() {
               <article
                 key={art.id}
                 onClick={() => setSelectedArticle(art)}
-                className="group cursor-pointer border-b border-nyt pb-6"
+                className="group cursor-pointer border-b border-nyt pb-6 relative"
               >
                 {art.imageUrl && (
                   <div className="mb-3 overflow-hidden bg-neutral-100 border border-nyt-light">
@@ -110,23 +136,31 @@ export default function App() {
                     {art.tag}
                   </span>
                 )}
-                <h3 className="font-nyt-serif text-xl font-bold leading-tight group-hover:text-[#555] mb-2">
+                <h3 className="font-nyt-serif text-xl font-bold leading-tight group-hover:text-neutral-500 mb-2">
                   {art.title}
                 </h3>
-                <p className="font-nyt-serif text-sm text-[#444] leading-relaxed mb-3">
+                <p className="font-nyt-serif text-sm opacity-80 leading-relaxed mb-3">
                   {art.excerpt}
                 </p>
-                <div className="text-[11px] text-[#777] flex items-center space-x-2">
-                  <span>{art.readTime}</span>
-                  <span>•</span>
-                  <span>{art.byline}</span>
+                <div className="text-[11px] opacity-60 flex items-center justify-between">
+                  <span>{art.readTime} • {art.byline}</span>
+                  <button
+                    onClick={(e) => toggleBookmark(art.id, e)}
+                    className="p-1 hover:text-black"
+                  >
+                    <Bookmark
+                      className={`w-3.5 h-3.5 ${
+                        bookmarkedIds.includes(art.id) ? 'fill-current text-amber-600' : ''
+                      }`}
+                    />
+                  </button>
                 </div>
               </article>
             ))}
           </div>
         </main>
       ) : (
-        /* Full Front Page Edition matching the exact user design */
+        /* Full Front Page Edition matching the exact user design with pro polish */
         <>
           <main className="w-full max-w-[1280px] mx-auto px-5 pt-4 pb-12">
             {/* Grid container with 4 column layout (3 cols, 4 cols, 3 cols, 2 cols) */}
@@ -139,15 +173,30 @@ export default function App() {
                 {/* Story 1 */}
                 <article
                   onClick={() => setSelectedArticle(getArticle('women-leaving-trump-admin'))}
-                  className="pb-5 border-b border-nyt group cursor-pointer"
+                  className="pb-5 border-b border-nyt group cursor-pointer relative"
                 >
-                  <h2 className="font-nyt-serif text-[24px] font-bold leading-[1.18] text-[#121212] group-hover:text-[#555] transition-colors mb-2">
-                    High-Ranking Women Are Leaving the Trump Administration
-                  </h2>
-                  <p className="font-nyt-serif text-[13.5px] leading-[1.4] text-[#333] mb-2.5">
+                  <div className="flex items-start justify-between">
+                    <h2 className="font-nyt-serif text-[24px] font-bold leading-[1.18] group-hover:text-neutral-500 transition-colors mb-2">
+                      High-Ranking Women Are Leaving the Trump Administration
+                    </h2>
+                    <button
+                      onClick={(e) => toggleBookmark('women-leaving-trump-admin', e)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-400 hover:text-black shrink-0"
+                      title="Save story"
+                    >
+                      <Bookmark
+                        className={`w-3.5 h-3.5 ${
+                          bookmarkedIds.includes('women-leaving-trump-admin')
+                            ? 'fill-current text-amber-600 opacity-100'
+                            : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="font-nyt-serif text-[13.5px] leading-[1.4] opacity-85 mb-2.5">
                     In the president’s second term, those heading for the exits are female officials.
                   </p>
-                  <div className="flex items-center space-x-2 text-[11px] text-[#727272]">
+                  <div className="flex items-center space-x-2 text-[11px] opacity-60">
                     <span>5 min read</span>
                     <span>•</span>
                     <span className="hover:underline">Tierney L. Cross</span>
@@ -157,15 +206,30 @@ export default function App() {
                 {/* Story 2 */}
                 <article
                   onClick={() => setSelectedArticle(getArticle('guilfoyle-rise-and-fall'))}
-                  className="pt-5 pb-5 border-b border-nyt group cursor-pointer"
+                  className="pt-5 pb-5 border-b border-nyt group cursor-pointer relative"
                 >
-                  <h3 className="font-nyt-serif text-[18px] font-bold leading-[1.22] text-[#121212] group-hover:text-[#555] transition-colors mb-1.5">
-                    The Steep Rise and Sudden Fall of Kimberly Guilfoyle
-                  </h3>
-                  <p className="font-nyt-serif text-[12.5px] leading-[1.4] text-[#555] mb-2">
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-nyt-serif text-[18px] font-bold leading-[1.22] group-hover:text-neutral-500 transition-colors mb-1.5">
+                      The Steep Rise and Sudden Fall of Kimberly Guilfoyle
+                    </h3>
+                    <button
+                      onClick={(e) => toggleBookmark('guilfoyle-rise-and-fall', e)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-400 hover:text-black shrink-0"
+                      title="Save story"
+                    >
+                      <Bookmark
+                        className={`w-3.5 h-3.5 ${
+                          bookmarkedIds.includes('guilfoyle-rise-and-fall')
+                            ? 'fill-current text-amber-600 opacity-100'
+                            : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="font-nyt-serif text-[12.5px] leading-[1.4] opacity-75 mb-2">
                     The former campaign aide and envoy nominee's rapid retreat highlights widening fractures among loyalists.
                   </p>
-                  <div className="flex items-center text-[11px] text-[#727272] space-x-3">
+                  <div className="flex items-center text-[11px] opacity-60 space-x-3">
                     <span className="flex items-center gap-1 font-nyt-sans text-[#326891] font-semibold">
                       <svg className="w-3 h-3 fill-current" viewBox="0 0 16 16">
                         <path d="M14 1H2a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3v3l4-3h5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z" />
@@ -177,11 +241,11 @@ export default function App() {
                 </article>
 
                 {/* Photographers strip */}
-                <div className="pt-4 text-[11px] text-[#666]">
-                  <span className="font-bold text-[10px] tracking-wider uppercase text-neutral-400 block mb-2">
+                <div className="pt-4 text-[11px] opacity-70">
+                  <span className="font-bold text-[10px] tracking-wider uppercase opacity-60 block mb-2 font-nyt-sans">
                     Photographers on Scene
                   </span>
-                  <ul className="space-y-1 text-[11px] text-[#444] italic font-nyt-serif">
+                  <ul className="space-y-1 text-[11px] italic font-nyt-serif">
                     {PHOTOGRAPHERS.map((item, idx) => (
                       <li key={idx}>• {item}</li>
                     ))}
@@ -196,10 +260,10 @@ export default function App() {
                   <span className="text-[10px] font-bold tracking-wider text-[#b30000] uppercase block mb-1">
                     Investigation
                   </span>
-                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline text-[#121212]">
+                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline">
                     Cornell’s President Is Grilled by Faculty Senate Over Handling of Allegations
                   </h4>
-                  <span className="text-[11px] text-[#777]">4 min read</span>
+                  <span className="text-[11px] opacity-60">4 min read</span>
                 </article>
               </section>
 
@@ -211,14 +275,14 @@ export default function App() {
                 {/* Large Center Featured Image */}
                 <div
                   onClick={() => setSelectedArticle(getArticle('trump-press-secretary'))}
-                  className="w-full mb-3 overflow-hidden bg-neutral-100 border border-nyt-light cursor-pointer group"
+                  className="w-full mb-3 overflow-hidden bg-neutral-100 border border-nyt-light cursor-pointer group relative"
                 >
                   <img
                     alt="Kimberly Guilfoyle speaking at briefing"
                     className="w-full h-auto object-cover group-hover:opacity-95 transition-opacity duration-300"
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuA87yIoWFSfTFNmeogUxelNEu_1AtPpv5aSDjdMsfktGQ3gNguMF6GG6HvRI0FNHo5cCnAe-0IMA5nCZpVEEwaBI_bnhC4XzoAjtPkQHnlIDyz0HJXG-7dJ4Y-qRqhUlMvrwNAP-G94SF9EDDr_Hr4OP5S1IIUN0auQo4HZQdX09dUIuTY6EKsVjfYImWtNrfWMkayo1FvroHT-Yv9gyBqT31F1llDWLERDNuVYmZUYgwNyv7vttGiv"
                   />
-                  <div className="p-1.5 text-right text-[10px] text-[#777] font-nyt-sans">
+                  <div className="p-1.5 text-right text-[10px] opacity-60 font-nyt-sans">
                     Kenny Holston/The New York Times
                   </div>
                 </div>
@@ -228,16 +292,27 @@ export default function App() {
                   onClick={() => setSelectedArticle(getArticle('trump-press-secretary'))}
                   className="pb-4 group cursor-pointer"
                 >
-                  <h2 className="font-nyt-serif text-[27px] font-bold leading-[1.14] text-[#121212] mb-2 group-hover:text-[#555] transition-colors">
+                  <h2 className="font-nyt-serif text-[27px] font-bold leading-[1.14] mb-2 group-hover:text-neutral-500 transition-colors">
                     Trump’s New Press Secretary: Not-Quite Attorney at Law
                   </h2>
-                  <p className="font-nyt-serif text-[14px] leading-[1.45] text-[#333] mb-3">
+                  <p className="font-nyt-serif text-[14px] leading-[1.45] opacity-85 mb-3">
                     Katie Zacharia told The New York Times that the confusion over her legal credentials is the result of one big misunderstanding.
                   </p>
-                  <div className="flex items-center text-[11px] text-[#727272] space-x-2">
-                    <span>4 min read</span>
-                    <span>•</span>
-                    <span className="text-neutral-500 font-nyt-sans">White House Bureau</span>
+
+                  {/* Pro Interactive Audio Narration Pill */}
+                  <div className="flex items-center space-x-3 mb-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAudioArticle(getArticle('trump-press-secretary'));
+                      }}
+                      className="inline-flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 px-2.5 py-1 rounded-full text-[11px] font-bold font-nyt-sans transition"
+                      title="Listen to this reporting"
+                    >
+                      <Play className="w-3 h-3 fill-current text-[#326891]" />
+                      <span>4 min listen</span>
+                    </button>
+                    <span className="text-[11px] opacity-60 font-nyt-sans">White House Bureau</span>
                   </div>
                 </article>
 
@@ -250,13 +325,13 @@ export default function App() {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-[#567b95] block mb-1">
                       The Great Read
                     </span>
-                    <h4 className="font-nyt-serif text-[18px] font-bold leading-tight mb-1.5 group-hover:underline text-[#121212]">
+                    <h4 className="font-nyt-serif text-[18px] font-bold leading-tight mb-1.5 group-hover:underline">
                       Coming Out at 50 Can Be Hard. Shelly Found a Coach.
                     </h4>
-                    <p className="font-nyt-serif text-[12.5px] leading-relaxed text-[#444] mb-2">
+                    <p className="font-nyt-serif text-[12.5px] leading-relaxed opacity-75 mb-2">
                       She spent decades building an identity as a wife and mother. Could she disrupt “a perfectly good family dynamic” to live her own truth?
                     </p>
-                    <span className="text-[11px] text-[#777]">Sophie Park for The New York Times</span>
+                    <span className="text-[11px] opacity-60">Sophie Park for The New York Times</span>
                   </article>
                 </div>
               </section>
@@ -267,18 +342,18 @@ export default function App() {
                 data-purpose="col-right-news"
               >
                 {/* Russia-Ukraine War Themed Module */}
-                <div className="bg-[#f9f9f9] p-3.5 border-t-2 border-[#121212] border-x border-b border-nyt">
+                <div className="bg-[#f9f9f9] dark:bg-neutral-900 p-3.5 border-t-2 border-[#121212] dark:border-neutral-200 border-x border-b border-nyt">
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-nyt">
-                    <span className="font-bold text-[12px] uppercase tracking-wider text-[#121212]">
+                    <span className="font-bold text-[12px] uppercase tracking-wider">
                       Russia-Ukraine War
                     </span>
-                    <span className="text-[10px] font-semibold text-red-700 uppercase bg-red-100 px-1 rounded">
+                    <span className="text-[10px] font-semibold text-red-700 uppercase bg-red-100 dark:bg-red-950 px-1 rounded">
                       Update
                     </span>
                   </div>
 
                   {/* Key updates list */}
-                  <ul className="text-[12px] space-y-1.5 pb-2.5 mb-2.5 border-b border-nyt font-nyt-sans font-semibold text-[#121212]">
+                  <ul className="text-[12px] space-y-1.5 pb-2.5 mb-2.5 border-b border-nyt font-nyt-sans font-semibold">
                     <li
                       onClick={() => setSelectedArticle(getArticle('ukraine-satellite-russia-escalates'))}
                       className="flex items-baseline space-x-1 hover:text-[#326891] cursor-pointer"
@@ -307,13 +382,13 @@ export default function App() {
                     onClick={() => setSelectedArticle(getArticle('ukraine-satellite-russia-escalates'))}
                     className="group cursor-pointer"
                   >
-                    <h3 className="font-nyt-serif text-[16.5px] font-bold leading-tight mb-1.5 group-hover:underline text-[#121212]">
+                    <h3 className="font-nyt-serif text-[16.5px] font-bold leading-tight mb-1.5 group-hover:underline">
                       Ukraine’s Exposure Grows as Satellite Use Is Restricted and Russia Escalates
                     </h3>
-                    <p className="font-nyt-serif text-[12px] leading-normal text-[#444] mb-2">
+                    <p className="font-nyt-serif text-[12px] leading-normal opacity-75 mb-2">
                       A huge attack cut power to 600,000 people in Kyiv, and a Pentagon-funded satellite program was curbed.
                     </p>
-                    <div className="flex items-center text-[10.5px] text-[#727272] space-x-2">
+                    <div className="flex items-center text-[10.5px] opacity-60 space-x-2">
                       <span className="text-[#326891] font-bold flex items-center gap-0.5">
                         💬 1.1k
                       </span>
@@ -328,20 +403,20 @@ export default function App() {
                   onClick={() => setSelectedArticle(getArticle('trump-diesel-deal-putin'))}
                   className="pb-3 border-b border-nyt group cursor-pointer"
                 >
-                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline text-[#121212]">
+                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline">
                     Why Trump’s Diesel Deal With Putin Won’t Knock Down High Prices
                   </h4>
-                  <span className="text-[11px] text-[#777]">4 min read</span>
+                  <span className="text-[11px] opacity-60">4 min read</span>
                 </article>
 
                 <article
                   onClick={() => setSelectedArticle(getArticle('us-intelligence-ukraine'))}
                   className="pb-3 border-b border-nyt group cursor-pointer"
                 >
-                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline text-[#121212]">
+                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline">
                     The U.S. Continues to Provide Intelligence to Ukraine, Officials Say
                   </h4>
-                  <span className="text-[11px] text-[#777]">3 min read</span>
+                  <span className="text-[11px] opacity-60">3 min read</span>
                 </article>
 
                 {/* Science & Health Alert */}
@@ -349,13 +424,13 @@ export default function App() {
                   onClick={() => setSelectedArticle(getArticle('lung-cancer-pope-leo'))}
                   className="pt-1 group cursor-pointer"
                 >
-                  <span className="text-[10px] font-bold tracking-wider uppercase text-neutral-500 block mb-1">
+                  <span className="text-[10px] font-bold tracking-wider uppercase opacity-60 block mb-1">
                     Health & The Vatican
                   </span>
-                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline text-[#121212]">
+                  <h4 className="font-nyt-serif text-[15px] font-bold leading-snug mb-1 group-hover:underline">
                     A New World of Lung Cancer Therapy Awaits Pope Leo
                   </h4>
-                  <p className="font-nyt-serif text-[12px] leading-relaxed text-[#555] mb-1.5">
+                  <p className="font-nyt-serif text-[12px] leading-relaxed opacity-75 mb-1.5">
                     Lung cancer rates dropped by half since the 1990s as personalized genetic targeted therapies advance rapidly.
                   </p>
                   <span className="text-[11px] text-[#326891] font-semibold">126 comments</span>
@@ -368,82 +443,120 @@ export default function App() {
                 data-purpose="col-opinion-and-meta"
               >
                 <div>
-                  <div className="border-b-2 border-black pb-1 mb-3">
-                    <h3 className="font-nyt-serif text-[16px] font-bold text-black uppercase tracking-wide">
+                  <div className="border-b-2 border-black dark:border-white pb-1 mb-3">
+                    <h3 className="font-nyt-serif text-[16px] font-bold uppercase tracking-wide">
                       Opinion
                     </h3>
                   </div>
 
-                  <div className="space-y-4 text-[#121212]">
-                    {/* Opinion 1 */}
+                  <div className="space-y-4">
+                    {/* Opinion 1 - David Wallace-Wells with circular headshot */}
                     <article
                       onClick={() => setSelectedArticle(getArticle('opinion-democrats-two-years'))}
                       className="border-b border-nyt pb-3 group cursor-pointer"
                     >
-                      <span className="font-nyt-sans text-[11px] font-bold text-[#444] block mb-0.5">
-                        David Wallace-Wells
-                      </span>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <img
+                          src={getArticle('opinion-democrats-two-years').authorAvatar}
+                          alt="David Wallace-Wells"
+                          className="w-7 h-7 rounded-full object-cover border border-neutral-300 grayscale group-hover:grayscale-0 transition"
+                        />
+                        <span className="font-nyt-sans text-[11px] font-bold opacity-80 block">
+                          David Wallace-Wells
+                        </span>
+                      </div>
                       <h4 className="font-nyt-serif text-[14px] font-bold leading-tight group-hover:underline mb-1">
                         Democrats Shouldn’t Wait Two More Years
                       </h4>
                       <span className="text-[10.5px] text-[#326891] font-semibold">💬 388</span>
                     </article>
 
-                    {/* Opinion 2 */}
+                    {/* Opinion 2 - Heather Kerr */}
                     <article
                       onClick={() => setSelectedArticle(getArticle('opinion-ebola-spread'))}
                       className="border-b border-nyt pb-3 group cursor-pointer"
                     >
-                      <span className="font-nyt-sans text-[11px] font-bold text-[#444] block mb-0.5">
-                        Heather Kerr
-                      </span>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <img
+                          src={getArticle('opinion-ebola-spread').authorAvatar}
+                          alt="Heather Kerr"
+                          className="w-7 h-7 rounded-full object-cover border border-neutral-300 grayscale group-hover:grayscale-0 transition"
+                        />
+                        <span className="font-nyt-sans text-[11px] font-bold opacity-80 block">
+                          Heather Kerr
+                        </span>
+                      </div>
                       <h4 className="font-nyt-serif text-[14px] font-bold leading-tight group-hover:underline mb-1">
                         I’ve Never Seen Ebola Spread Like This
                       </h4>
-                      <span className="text-[10.5px] text-[#777]">Guest Essay</span>
+                      <span className="text-[10.5px] opacity-60">Guest Essay</span>
                     </article>
 
-                    {/* Opinion 3 */}
+                    {/* Opinion 3 - Carlos Lozada */}
                     <article
                       onClick={() => setSelectedArticle(getArticle('opinion-manifesto-manifestoes'))}
                       className="border-b border-nyt pb-3 group cursor-pointer"
                     >
-                      <span className="font-nyt-sans text-[11px] font-bold text-[#444] block mb-0.5">
-                        Carlos Lozada
-                      </span>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <img
+                          src={getArticle('opinion-manifesto-manifestoes').authorAvatar}
+                          alt="Carlos Lozada"
+                          className="w-7 h-7 rounded-full object-cover border border-neutral-300 grayscale group-hover:grayscale-0 transition"
+                        />
+                        <span className="font-nyt-sans text-[11px] font-bold opacity-80 block">
+                          Carlos Lozada
+                        </span>
+                      </div>
                       <h4 className="font-nyt-serif text-[14px] font-bold leading-tight group-hover:underline mb-1">
                         A Manifesto to End All Manifestoes
                       </h4>
                       <span className="text-[10.5px] text-[#326891] font-semibold">💬 69</span>
                     </article>
 
-                    {/* Opinion 4 */}
+                    {/* Opinion 4 - Jayson Greene */}
                     <article
                       onClick={() => setSelectedArticle(getArticle('opinion-tom-cruise-flop'))}
                       className="group cursor-pointer"
                     >
-                      <span className="font-nyt-sans text-[11px] font-bold text-[#444] block mb-0.5">
-                        Jayson Greene
-                      </span>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <img
+                          src={getArticle('opinion-tom-cruise-flop').authorAvatar}
+                          alt="Jayson Greene"
+                          className="w-7 h-7 rounded-full object-cover border border-neutral-300 grayscale group-hover:grayscale-0 transition"
+                        />
+                        <span className="font-nyt-sans text-[11px] font-bold opacity-80 block">
+                          Jayson Greene
+                        </span>
+                      </div>
                       <h4 className="font-nyt-serif text-[14px] font-bold leading-tight group-hover:underline mb-1">
                         Tom Cruise’s Big Flop Is a Secret Masterpiece
                       </h4>
-                      <span className="text-[10.5px] text-[#777]">5 min read</span>
+                      <span className="text-[10.5px] opacity-60">5 min read</span>
                     </article>
                   </div>
                 </div>
 
-                {/* Wirecutter Feature Tile */}
+                {/* Wirecutter Pro Feature Tile */}
                 <div
                   onClick={() => setSelectedArticle(getArticle('wirecutter-stick-vacuums'))}
-                  className="bg-[#f7f7f7] border border-nyt p-3 text-center mt-auto cursor-pointer hover:bg-neutral-100 transition"
+                  className="bg-[#f7f7f7] dark:bg-neutral-900 border border-nyt p-3 text-center mt-auto cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
                 >
-                  <span className="text-[9px] uppercase tracking-widest text-[#888] font-bold block mb-1">
-                    From Wirecutter
-                  </span>
-                  <p className="font-nyt-serif text-[12.5px] font-semibold leading-snug hover:underline">
+                  <div className="flex items-center justify-center space-x-1 mb-1">
+                    <span className="text-[9px] uppercase tracking-widest opacity-60 font-bold block">
+                      From Wirecutter
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#326891]" />
+                    <span className="text-[9px] text-[#326891] font-bold uppercase">Staff Pick</span>
+                  </div>
+                  <p className="font-nyt-serif text-[12.5px] font-semibold leading-snug hover:underline mb-1.5">
                     The 6 Best Cordless Stick Vacuums of 2026
                   </p>
+                  <div className="flex items-center justify-center space-x-1 text-amber-500 text-[10px]">
+                    {'★★★★★'.split('').map((s, i) => (
+                      <span key={i}>{s}</span>
+                    ))}
+                    <span className="opacity-60 text-[9px] ml-1">(Tested & Verified)</span>
+                  </div>
                 </div>
               </section>
             </div>
@@ -451,9 +564,9 @@ export default function App() {
 
           {/* Midpage Editorial Separator */}
           <div className="w-full max-w-[1280px] mx-auto px-5 mb-6">
-            <div className="border-t-2 border-black pt-2 flex items-center justify-between text-[11px] uppercase tracking-wider font-bold">
+            <div className="border-t-2 border-black dark:border-white pt-2 flex items-center justify-between text-[11px] uppercase tracking-wider font-bold">
               <span>More to Read for Free</span>
-              <span className="text-neutral-400 font-normal lowercase italic text-[12px] font-nyt-serif">
+              <span className="opacity-60 font-normal lowercase italic text-[12px] font-nyt-serif">
                 Continued international coverage
               </span>
             </div>
@@ -467,7 +580,7 @@ export default function App() {
                 onClick={() => setSelectedArticle(getArticle('angry-youth-aging-europe'))}
                 className="border-t border-nyt pt-3 group cursor-pointer"
               >
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#121212] block mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider block mb-2">
                   The World
                 </span>
                 <div className="mb-2 bg-neutral-100 overflow-hidden">
@@ -480,10 +593,10 @@ export default function App() {
                 <h4 className="font-nyt-serif text-[17px] font-bold leading-snug mb-1.5 group-hover:underline">
                   Angry Youth in Aging Europe
                 </h4>
-                <p className="font-nyt-serif text-[12.5px] text-[#444] leading-normal mb-2">
+                <p className="font-nyt-serif text-[12.5px] opacity-75 leading-normal mb-2">
                   A bitter generational battle over resources is boiling over as economic growth on the continent stalls.
                 </p>
-                <span className="text-[11px] text-[#777]">7 min read • Christophe Archambault</span>
+                <span className="text-[11px] opacity-60">7 min read • Christophe Archambault</span>
               </article>
 
               {/* Section: Artificial Intelligence */}
@@ -491,7 +604,7 @@ export default function App() {
                 onClick={() => setSelectedArticle(getArticle('ai-agents-dinner-party'))}
                 className="border-t border-nyt pt-3 group cursor-pointer"
               >
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#121212] block mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider block mb-2">
                   Technology & A.I.
                 </span>
                 <div className="mb-2 bg-neutral-100 overflow-hidden">
@@ -504,7 +617,7 @@ export default function App() {
                 <h4 className="font-nyt-serif text-[17px] font-bold leading-snug mb-1.5 group-hover:underline">
                   What a Group of A.I. Agents Talked About as Their Humans Had a Dinner Party
                 </h4>
-                <p className="font-nyt-serif text-[12.5px] text-[#444] leading-normal mb-2">
+                <p className="font-nyt-serif text-[12.5px] opacity-75 leading-normal mb-2">
                   As digital entities multiply, we get a glimpse into how bots communicate with one another behind closed doors.
                 </p>
                 <span className="text-[11px] text-[#326891] font-semibold">💬 210 • Aaron Fernandez</span>
@@ -515,7 +628,7 @@ export default function App() {
                 onClick={() => setSelectedArticle(getArticle('longevity-experts-stop-saying'))}
                 className="border-t border-nyt pt-3 group cursor-pointer"
               >
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#121212] block mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider block mb-2">
                   Well
                 </span>
                 <div className="mb-2 bg-neutral-100 overflow-hidden">
@@ -528,7 +641,7 @@ export default function App() {
                 <h4 className="font-nyt-serif text-[17px] font-bold leading-snug mb-1.5 group-hover:underline">
                   6 Things Longevity Experts Wish People Would Stop Saying
                 </h4>
-                <p className="font-nyt-serif text-[12.5px] text-[#444] leading-normal mb-2">
+                <p className="font-nyt-serif text-[12.5px] opacity-75 leading-normal mb-2">
                   Living longer and healthier is important. But don’t believe everything you hear about rapid reverse-aging.
                 </p>
                 <span className="text-[11px] text-[#326891] font-semibold">💬 591 • Elena Boils</span>
@@ -539,7 +652,7 @@ export default function App() {
                 onClick={() => setSelectedArticle(getArticle('sally-rooney-books-britain'))}
                 className="border-t border-nyt pt-3 group cursor-pointer"
               >
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#121212] block mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider block mb-2">
                   Culture
                 </span>
                 <div className="mb-2 bg-neutral-100 overflow-hidden">
@@ -552,21 +665,21 @@ export default function App() {
                 <h4 className="font-nyt-serif text-[17px] font-bold leading-snug mb-1.5 group-hover:underline">
                   Sally Rooney Says Her Novels Will No Longer Be Sold in Britain
                 </h4>
-                <p className="font-nyt-serif text-[12.5px] text-[#444] leading-normal mb-2">
+                <p className="font-nyt-serif text-[12.5px] opacity-75 leading-normal mb-2">
                   The author stated she could not receive royalties due to her financial support for an activist coalition.
                 </p>
-                <span className="text-[11px] text-[#777]">3 min read • Ellius Grace</span>
+                <span className="text-[11px] opacity-60">3 min read • Ellius Grace</span>
               </article>
             </div>
           </section>
 
           {/* NYT Games Module */}
           <section className="w-full max-w-[1280px] mx-auto px-5 pb-12" data-purpose="nyt-games-strip">
-            <div className="border-t-2 border-black pt-3 pb-6">
+            <div className="border-t-2 border-black dark:border-white pt-3 pb-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-nyt-serif text-[22px] font-bold text-black">Play NYT Games</h3>
-                  <p className="text-[12px] text-[#666] font-nyt-sans">
+                  <h3 className="font-nyt-serif text-[22px] font-bold">Play NYT Games</h3>
+                  <p className="text-[12px] opacity-60 font-nyt-sans">
                     Daily word puzzles, logic challenges and crosswords.
                   </p>
                 </div>
@@ -582,56 +695,56 @@ export default function App() {
                 {/* Wordle */}
                 <div
                   onClick={() => setActiveGame('wordle')}
-                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition"
+                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition group"
                 >
-                  <div className="w-10 h-10 bg-[#6aaa64] text-white flex items-center justify-center font-bold text-[18px] rounded">
+                  <div className="w-10 h-10 bg-[#6aaa64] text-white flex items-center justify-center font-bold text-[18px] rounded group-hover:scale-105 transition">
                     W
                   </div>
                   <div>
                     <h4 className="font-bold text-[14px]">Wordle</h4>
-                    <p className="text-[11px] text-[#666]">Guess the 5-letter word</p>
+                    <p className="text-[11px] opacity-60">Guess the 5-letter word</p>
                   </div>
                 </div>
 
                 {/* Connections */}
                 <div
                   onClick={() => setActiveGame('connections')}
-                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition"
+                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition group"
                 >
-                  <div className="w-10 h-10 bg-[#b4a7d6] text-white flex items-center justify-center font-bold text-[18px] rounded">
+                  <div className="w-10 h-10 bg-[#b4a7d6] text-white flex items-center justify-center font-bold text-[18px] rounded group-hover:scale-105 transition">
                     C
                   </div>
                   <div>
                     <h4 className="font-bold text-[14px]">Connections</h4>
-                    <p className="text-[11px] text-[#666]">Group common threads</p>
+                    <p className="text-[11px] opacity-60">Group common threads</p>
                   </div>
                 </div>
 
                 {/* Spelling Bee */}
                 <div
                   onClick={() => setActiveGame('spelling-bee')}
-                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition"
+                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition group"
                 >
-                  <div className="w-10 h-10 bg-[#f7da21] text-black flex items-center justify-center font-bold text-[18px] rounded">
+                  <div className="w-10 h-10 bg-[#f7da21] text-black flex items-center justify-center font-bold text-[18px] rounded group-hover:scale-105 transition">
                     🐝
                   </div>
                   <div>
                     <h4 className="font-bold text-[14px]">Spelling Bee</h4>
-                    <p className="text-[11px] text-[#666]">Make words with 7 letters</p>
+                    <p className="text-[11px] opacity-60">Make words with 7 letters</p>
                   </div>
                 </div>
 
                 {/* The Mini */}
                 <div
                   onClick={() => setActiveGame('mini')}
-                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition"
+                  className="border border-nyt p-3 rounded flex items-center space-x-3 hover:shadow-sm hover:border-black cursor-pointer transition group"
                 >
-                  <div className="w-10 h-10 bg-[#4a90e2] text-white flex items-center justify-center font-bold text-[18px] rounded">
+                  <div className="w-10 h-10 bg-[#4a90e2] text-white flex items-center justify-center font-bold text-[18px] rounded group-hover:scale-105 transition">
                     M
                   </div>
                   <div>
                     <h4 className="font-bold text-[14px]">The Mini Crossword</h4>
-                    <p className="text-[11px] text-[#666]">Bite-sized daily puzzle</p>
+                    <p className="text-[11px] opacity-60">Bite-sized daily puzzle</p>
                   </div>
                 </div>
               </div>
@@ -674,6 +787,15 @@ export default function App() {
           onClose={() => setActiveGame(null)}
         />
       )}
+
+      {/* MegaMenu Drawer */}
+      <MegaMenu
+        isOpen={isMegaMenuOpen}
+        onClose={() => setIsMegaMenuOpen(false)}
+        onSelectSection={setCurrentSection}
+        onOpenGames={() => setActiveGame('wordle')}
+        onOpenSearch={() => setIsSearchOpen(true)}
+      />
 
       {/* Search Modal */}
       {isSearchOpen && (
